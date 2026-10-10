@@ -1,9 +1,6 @@
 # ==============================================================================
-# Aetheris AI Research Portal - GitHub Deployment (minhoya-ai Dedicated)
+# Aetheris AI Research Portal - GitHub Deployment (minhoya-ai)
 # ==============================================================================
-
-$OutputEncoding = [System.Text.Encoding]::UTF8
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") + ";C:\Program Files\GitHub CLI;C:\Users\nulgi\AppData\Local\Microsoft\WinGet\Packages\Git.MinGit_Microsoft.Winget.Source_8wekyb3d8bbwe\cmd"
 
@@ -11,51 +8,53 @@ Set-Location $PSScriptRoot
 
 Clear-Host
 Write-Host "======================================================================" -ForegroundColor Cyan
-Write-Host "  🌌 Aetheris AI Portal - minhoya-ai 계정 전용 푸시 도우미" -ForegroundColor Cyan
-Write-Host "  저장소: https://github.com/minhoya-ai/tech-research-corp" -ForegroundColor Cyan
+Write-Host "  Aetheris AI Portal - Deploy to GitHub (minhoya-ai)" -ForegroundColor Cyan
+Write-Host "  Target: https://github.com/minhoya-ai/tech-research-corp" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 원격 저장소 설정
+# Set origin remote
 git remote remove origin 2>$null
 git remote add origin https://github.com/minhoya-ai/tech-research-corp.git
 
-# 토큰 입력받기
-Write-Host "기존 minhoya-ai 계정의 GitHub Personal Access Token을 입력해주세요." -ForegroundColor Yellow
-$token = Read-Host "minhoya-ai 액세스 토큰 붙여넣기 (ghp_...)"
-$token = $token.Trim()
+Write-Host "Please enter your GitHub Personal Access Token (PAT) for minhoya-ai:" -ForegroundColor Yellow
+$token = Read-Host "Token (starts with ghp_)"
 
 if ([string]::IsNullOrWhiteSpace($token)) {
-    Write-Host "`n[오류] 토큰이 입력되지 않았습니다." -ForegroundColor Red
-    Read-Host "종료하려면 Enter를 누르세요..."
-    return
+    Write-Host ""
+    Write-Host "[ERROR] Token cannot be empty. Aborted." -ForegroundColor Red
+    Read-Host "Press Enter to exit..."
+    exit 1
 }
 
-Write-Host "`n[minhoya-ai 계정으로 GitHub 업로드 진행 중...]`n" -ForegroundColor Green
+$token = $token.Trim()
 
-# 자격 증명 저장 활성화 (이후 재입력 방지)
-git config credential.helper store
+Write-Host ""
+Write-Host "[Uploading files to GitHub main branch...]" -ForegroundColor Green
+Write-Host ""
 
-# 푸시 실행
+# Push to GitHub repository using token
 git push -u "https://minhoya-ai:$token@github.com/minhoya-ai/tech-research-corp.git" main
 
 if ($LASTEXITCODE -eq 0) {
-    # 원격 URL을 깨끗한 URL로 재설정 (토큰 노출 방지)
+    # Store credential for future pushes without asking again
+    git config credential.helper store
     git remote set-url origin https://github.com/minhoya-ai/tech-research-corp.git
     
-    Write-Host "`n======================================================================" -ForegroundColor Green
-    Write-Host "🎉 업로드 성공! 모든 파일이 minhoya-ai/tech-research-corp 에 푸시되었습니다." -ForegroundColor Green
     Write-Host ""
-    Write-Host "📌 [GitHub Pages 활성화 바로가기]" -ForegroundColor Yellow
-    Write-Host "👉 https://github.com/minhoya-ai/tech-research-corp/settings/pages" -ForegroundColor White
-    Write-Host "   (Source를 'GitHub Actions'로 선택하시면 배포 완료됩니다)"
+    Write-Host "======================================================================" -ForegroundColor Green
+    Write-Host "SUCCESS! All files have been uploaded to minhoya-ai/tech-research-corp" -ForegroundColor Green
     Write-Host ""
-    Write-Host "🌐 공식 웹사이트 주소:" -ForegroundColor Cyan
-    Write-Host "👉 https://minhoya-ai.github.io/tech-research-corp/" -ForegroundColor Cyan
+    Write-Host "NEXT STEP: Enable GitHub Pages" -ForegroundColor Yellow
+    Write-Host "1. Visit: https://github.com/minhoya-ai/tech-research-corp/settings/pages" -ForegroundColor White
+    Write-Host "2. Set 'Source' to 'GitHub Actions'" -ForegroundColor White
+    Write-Host "3. Your site will be live at:" -ForegroundColor White
+    Write-Host "   https://minhoya-ai.github.io/tech-research-corp/" -ForegroundColor Cyan
     Write-Host "======================================================================" -ForegroundColor Green
 } else {
-    Write-Host "`n[오류] 푸시 실패. 토큰 유효 기간 및 권한(repo)을 확인해주세요." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "[ERROR] Push failed. Please check your token permissions (repo scope required)." -ForegroundColor Red
 }
 
 Write-Host ""
-Read-Host "창을 닫으려면 Enter를 누르세요..."
+Read-Host "Done. Press Enter to exit..."
