@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aetheris AI Research | Frontier Data Intelligence & Physical AI</title>
+  
+  <!-- Meta & OpenGraph -->
+  <meta name="description" content="Aetheris AI Research: Exploring high-dimensional data manifolds, ISO/IEC 5259 certified data diagnostics, and real-time Physical AI systems.">
+  <meta property="og:title" content="Aetheris AI Research: Where Data Intelligence Meets Tangible Impact">
+  <meta property="og:description" content="고차원 데이터 인텔리전스를 탐구하고, 측정 가능한 인공지능의 미래를 창조합니다.">
+  <meta property="og:type" content="website">
+
+  <!-- Web Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              orange: '#f97316',
+              amber: '#fb923c',
+              dark: '#070a12',
+              surface: '#0e1424'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom Theme Stylesheet -->
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body class="antialiased selection:bg-orange-500 selection:text-white">
+
+  <!-- Interactive Particle Background Canvas -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ==========================================================
+       HEADER & NAVIGATION (Sticky Glassmorphism)
+       ========================================================== -->
+  <header class="fixed top-0 left-0 right-0 z-50 glass-nav transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 header-container">
+      <!-- Brand Logo -->
+      <a href="#" class="logo-badge">
+        <div class="logo-symbol">Æ</div>
+        <div class="flex flex-col">
+          <span class="tracking-tight text-lg md:text-xl font-black">AETHERIS <span class="text-orange-500 font-extrabold">AI</span></span>
+          <span class="text-[9px] tracking-widest text-slate-400 font-mono -mt-1 hidden sm:block" data-i18n="brand.tag">RESEARCH INSTITUTE</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Menu -->
+      <nav class="hidden lg:flex items-center space-x-1" aria-label="Main Navigation">
+        <a href="#featured" class="nav-link" data-i18n="nav.research">핵심 연구 (Research)</a>
+        <a href="#posts" class="nav-link" data-i18n="nav.tech">데이터 기술 (Technology)</a>
+        <a href="#simulator" class="nav-link" data-i18n="nav.simulator">체험 시뮬레이터 (Simulator)</a>
+        <a href="#contact" class="nav-link" data-i18n="nav.contact">연구 협력 (Contact)</a>
+      </nav>
+
+      <!-- Action Toolbar (Theme, History, Stats, Language) -->
+      <div class="flex items-center space-x-2 md:space-x-3">
+        <!-- Stats Modal Trigger -->
+        <button id="stats-toggle-btn" class="icon-btn" title="연구 성과 통계" aria-label="연구 성과 통계">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+        </button>
+
+        <!-- Reading History Trigger -->
+        <button id="history-toggle-btn" class="icon-btn" title="최근 열람 기록" aria-label="최근 열람 기록">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button id="theme-toggle-btn" class="icon-btn" title="테마 변경" aria-label="테마 변경">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+
+        <!-- Language Switcher (KO / EN) -->
+        <div class="lang-switch">
+          <button class="lang-btn active" data-lang="ko" type="button">KO</button>
+          <button class="lang-btn" data-lang="en" type="button">EN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================
+       HERO SECTION
+       ========================================================== -->
+  <main class="relative z-10 pt-28 md:pt-36">
+    <div class="hero-glow-blob"></div>
+
+    <section class="max-w-5xl mx-auto px-6 text-center mb-16 md:mb-24">
+      <div class="hero-pill">
+        <span class="inline-block w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+        <span data-i18n="hero.badge">NEXT-GEN DATA INTELLIGENCE & PHYSICAL AI</span>
+      </div>
+
+      <h1 class="hero-title text-slate-100">
+        <span data-i18n="hero.title.pre">보이지 않는 고차원 데이터를 탐구하고,</span><br>
+        <span class="gradient-text" data-i18n="hero.title.gradient">측정 가능한 AI의 미래를</span>
+        <span data-i18n="hero.title.post">창조합니다.</span>
+      </h1>
+
+      <p class="hero-desc" data-i18n="hero.desc">
+        Aetheris AI는 고차원 임베딩 공간 기하학 분석과 ISO/IEC 5259 표준 AI 데이터 품질 진단, Physical AI 시스템 엔지니어링을 선도하는 딥테크 연구 기업입니다.
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <a href="#posts" class="w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-white transition-all transform hover:-translate-y-0.5"
+           style="background: var(--accent-gradient); box-shadow: 0 4px 18px var(--accent-glow);"
+           data-i18n="hero.cta.primary">
+          최신 연구 논문 탐색
+        </a>
+        <a href="#simulator" class="w-full sm:w-auto px-7 py-3.5 rounded-xl font-semibold text-slate-200 border border-slate-700/80 hover:border-orange-500/60 hover:text-white transition-all glass-panel"
+           data-i18n="hero.cta.secondary">
+          데이터 품질 진단 체험
+        </a>
+      </div>
+
+      <!-- Real-Time Research Metric Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+        <div class="metric-box">
+          <div class="metric-value gradient-text">48+</div>
+          <div class="metric-label" data-i18n="stats.papers">발행 논문 & 백서</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value">16,400+</div>
+          <div class="metric-label" data-i18n="stats.citations">총 논문 인용 수</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value text-orange-400">19</div>
+          <div class="metric-label" data-i18n="stats.patents">보유 글로벌 특허</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value text-emerald-400">+38.4%</div>
+          <div class="metric-label" data-i18n="stats.gain">데이터 효율성 개선율</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         FEATURED HIGHLIGHTED RESEARCH SECTION
+         ========================================================== -->
+    <section id="featured" class="max-w-7xl mx-auto px-6 mb-16">
+      <div id="featured-article-wrap">
+        <!-- Rendered dynamically via App.renderFeatured() -->
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         SEARCH, FILTER, VIEW-MODE & ARTICLES SECTION
+         ========================================================== -->
+    <section id="posts" class="max-w-7xl mx-auto px-6 mb-24">
+      
+      <!-- Toolbar (Search, View Mode Toggle, Category Chips) -->
+      <div class="toolbar-container glass-panel">
+        <div class="search-input-wrap">
+          <svg class="w-4 h-4 search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" id="search-input" class="search-input" 
+                 placeholder="연구 주제, 알고리즘, 저자, 키워드 검색... (단축키: /)" 
+                 data-i18n-placeholder="search.placeholder">
+          <span class="shortcut-badge">/</span>
+        </div>
+
+        <!-- View Mode Switch (Grid Card vs Compact List) -->
+        <div class="view-mode-toggle">
+          <button id="view-card-btn" class="view-btn active" title="카드 뷰">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span class="hidden sm:inline" data-i18n="view.card">카드 뷰</span>
+          </button>
+          <button id="view-btn-list" id="view-list-btn" class="view-btn" title="리스트 뷰">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span class="hidden sm:inline" data-i18n="view.list">리스트 뷰</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Chips -->
+      <div id="category-filter-container" class="filter-tags-scroll mb-8">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Articles Display Container (Grid or List) -->
+      <div id="articles-display-container">
+        <!-- Rendered dynamically via App.renderArticles() -->
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         INTERACTIVE EMBEDDING SIMULATOR SECTION
+         ========================================================== -->
+    <section id="simulator" class="max-w-7xl mx-auto px-6 mb-24">
+      <div class="tech-simulator-card">
+        <div class="max-w-3xl mb-6">
+          <div class="hero-pill" style="margin-bottom: 0.75rem;">
+            <span data-i18n="sim.badge">INTERACTIVE LAB</span>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-3" style="font-family: var(--font-display);" data-i18n="sim.title">
+            실시간 고차원 임베딩 & 데이터 품질 진단 시뮬레이터
+          </h2>
+          <p class="text-slate-300 text-sm md:text-base leading-relaxed" data-i18n="sim.desc">
+            브라우저 상에서 데이터 샘플을 생성하고, Aetheris AI의 독자적인 위상 공간 분석 알고리즘이 이상치(Outlier)와 중복(Redundancy)을 실시간으로 감지하는 과정을 확인해보세요.
+          </p>
+        </div>
+
+        <!-- Canvas Visualizer -->
+        <div class="canvas-preview-wrap mb-4">
+          <canvas id="sim-canvas" width="800" height="280"></canvas>
+        </div>
+
+        <!-- Controls & Status Bar -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          <div class="flex items-center gap-3">
+            <button id="sim-btn-generate" class="px-4 py-2 rounded-lg font-bold text-sm bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors border border-slate-700" data-i18n="sim.btn.generate">
+              새 데이터셋 생성
+            </button>
+            <button id="sim-btn-clean" class="px-4 py-2 rounded-lg font-bold text-sm text-white transition-all transform hover:scale-105" style="background: var(--accent-gradient); box-shadow: 0 4px 12px var(--accent-glow);" data-i18n="sim.btn.clean">
+              Data Diet™ 정제 실행
+            </button>
+          </div>
+          <div id="sim-status-text" class="text-xs sm:text-sm font-mono text-slate-400">
+            상태: 153개 원시 다차원 벡터 샘플 초기화 완료 (노이즈 및 이상치 포함).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         CONTACT & COLLABORATION CALLOUT
+         ========================================================== -->
+    <section id="contact" class="max-w-5xl mx-auto px-6 text-center mb-20">
+      <div class="p-10 md:p-14 rounded-3xl border border-orange-500/30 glass-panel relative overflow-hidden">
+        <div class="relative z-10">
+          <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-4" style="font-family: var(--font-display);">
+            Ready to Pioneer High-Trust AI?
+          </h2>
+          <p class="text-slate-300 max-w-2xl mx-auto text-base mb-8 leading-relaxed">
+            Aetheris AI는 글로벌 파트너 기업 및 연구 기관과 함께 차세대 Physical AI와 데이터 품질 검증의 새로운 표준을 개척하고 있습니다.
+          </p>
+          <div class="flex flex-wrap justify-center gap-4">
+            <a href="mailto:contact@aetheris.ai" class="px-8 py-3.5 rounded-xl font-bold text-white transition-all hover:scale-105" style="background: var(--accent-gradient); box-shadow: 0 4px 20px var(--accent-glow);">
+              연구 협력 및 PoC 문의하기
+            </a>
+            <button onclick="App.openStatsModal()" class="px-8 py-3.5 rounded-xl font-semibold text-slate-300 border border-slate-700 hover:border-slate-500 hover:text-white transition-all">
+              기관 공인 지표 열람
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==========================================================
+       MODALS CONTAINER
+       ========================================================== -->
+  <!-- 1. Article Viewer Modal -->
+  <div id="article-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close-btn" aria-label="Close">&times;</button>
+      <div id="article-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 2. Research Stats Modal -->
+  <div id="stats-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close-btn" aria-label="Close">&times;</button>
+      <div class="mb-6">
+        <span class="hero-pill" style="margin-bottom: 0.5rem;">LAB AUDIT & METRICS</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white" style="font-family: var(--font-display);" data-i18n="modal.stats.title">
+          연구소 핵심 성과 및 글로벌 지표
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60">
+          <div class="text-xs font-mono text-slate-400 mb-1">TOTAL CITATIONS</div>
+          <div class="text-2xl font-black text-white" style="font-family: var(--font-display);">16,400+</div>
+          <div class="text-xs text-orange-400 mt-2 font-medium">Top 1% Frontier AI Publications</div>
+        </div>
+        <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60">
+          <div class="text-xs font-mono text-slate-400 mb-1">REGISTERED PATENTS</div>
+          <div class="text-2xl font-black text-white" style="font-family: var(--font-display);">19 Items</div>
+          <div class="text-xs text-emerald-400 mt-2 font-medium">US, KR, PCT Multi-jurisdiction</div>
+        </div>
+        <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60">
+          <div class="text-xs font-mono text-slate-400 mb-1">GLOBAL ENTERPRISES</div>
+          <div class="text-2xl font-black text-white" style="font-family: var(--font-display);">70+ Partners</div>
+          <div class="text-xs text-cyan-400 mt-2 font-medium">Automotive, BioTech, Semiconductor</div>
+        </div>
+        <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60">
+          <div class="text-xs font-mono text-slate-400 mb-1">COMPLIANCE ASSURANCE</div>
+          <div class="text-2xl font-black text-white" style="font-family: var(--font-display);">ISO/IEC 5259</div>
+          <div class="text-xs text-purple-400 mt-2 font-medium">Official WG3 Data Quality Standard</div>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/40 text-xs text-slate-400 leading-relaxed font-mono">
+        Audit Verified: 2026-Q3 Comprehensive R&D Assessment. Certified by Independent AI Safety & Quality Board.
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Reading History Modal -->
+  <div id="history-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close-btn" aria-label="Close">&times;</button>
+      <div class="mb-5">
+        <h2 class="text-2xl font-extrabold text-white" style="font-family: var(--font-display);" data-i18n="modal.history.title">
+          최근 열람한 연구 아티클
+        </h2>
+        <p class="text-xs text-slate-400 mt-1 font-mono">Browser Local History (Auto-persisted)</p>
+      </div>
+      <div id="history-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ==========================================================
+       FOOTER
+       ========================================================== -->
+  <footer class="footer-wrap">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col md:flex-row items-start justify-between gap-8 pb-10 border-b border-slate-800">
+        <div>
+          <a href="#" class="logo-badge mb-3">
+            <div class="logo-symbol">Æ</div>
+            <span class="text-xl font-black">AETHERIS <span class="text-orange-500">AI</span></span>
+          </a>
+          <p class="text-sm text-slate-400 max-w-md leading-relaxed" data-i18n="footer.corp">
+            Aetheris AI Research Inc. All Rights Reserved.
+          </p>
+          <p class="text-xs text-slate-500 mt-2 leading-relaxed" data-i18n="footer.address">
+            글로벌 본사: 대한민국 경기도 성남시 분당구 판교역로 146 R&D 타워 | 실리콘밸리 연구소: Palo Alto, CA
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-8 text-sm">
+          <div>
+            <div class="font-bold text-slate-200 mb-3 font-mono">RESEARCH LABS</div>
+            <ul class="space-y-2 text-slate-400 text-xs">
+              <li><a href="#posts" class="hover:text-orange-400">Cognitive AI Systems</a></li>
+              <li><a href="#posts" class="hover:text-orange-400">High-Dimensional Topology</a></li>
+              <li><a href="#posts" class="hover:text-orange-400">Physical AI & Robotics</a></li>
+              <li><a href="#posts" class="hover:text-orange-400">Synthetic Data Engine</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="font-bold text-slate-200 mb-3 font-mono">GOVERNANCE</div>
+            <ul class="space-y-2 text-slate-400 text-xs">
+              <li><a href="#posts" class="hover:text-orange-400">ISO/IEC 5259 Compliance</a></li>
+              <li><a href="#posts" class="hover:text-orange-400">EU AI Act Blueprint</a></li>
+              <li><a href="#posts" class="hover:text-orange-400">Responsible AI Charter</a></li>
+              <li><a href="#posts" class="hover:text-orange-400">Security Whitepaper</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+        <p data-i18n="footer.rights">ISO/IEC 5259 준수 AI 데이터 품질 평가 솔루션 공인 연구소</p>
+        <p data-i18n="footer.contact">기술 협력 & 산학 연구 문의: contact@aetheris.ai | 특허 번호: KR-10-2026-0048291</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

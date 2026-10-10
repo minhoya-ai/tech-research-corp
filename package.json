@@ -1,0 +1,14 @@
+{
+  "name": "tech-research-corp",
+  "version": "1.0.0",
+  "description": "High-end Tech & AI Research Corporate Portal inspired by Pebblous AI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "author": "Tech Research Corp",
+  "license": "MIT"
+}
