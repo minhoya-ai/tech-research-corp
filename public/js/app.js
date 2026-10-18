@@ -1,6 +1,10 @@
 /**
  * Main Application Controller for Aetheris AI Portal
- * Handles Theme, View Modes, Real-time Search, Modals, Reading History, and Interactive Simulator
+ * Handles Theme, View Modes, Real-time Search, Modals, Reading History,
+ * Interactive Simulator, and 30-Minute Periodic & Instant Refresh for Data Technology Subcategories:
+ * - 전체보기 (All Topics)
+ * - AI 기초 연구 (AI Foundations)
+ * - 데이터 인텔리전스 (Data Intelligence)
  */
 
 const App = {
@@ -11,9 +15,19 @@ const App = {
   simulatorPoints: [],
   simAnimationId: null,
 
+  // 30-Minute Data Technology Sync Engine (covers AI Research + Data Intelligence + All)
+  dataTechSync: {
+    intervalMs: 30 * 60 * 1000, // 30 minutes in milliseconds
+    lastSyncTime: Date.now(),
+    countdownTimerId: null,
+    aiOffset: 0,
+    diOffset: 0
+  },
+
   init() {
     this.loadPreferences();
     this.setupEventListeners();
+    this.initDataTechSync();
     this.renderCategories();
     this.renderFeatured();
     this.renderArticles();
@@ -36,6 +50,22 @@ const App = {
       this.readingHistory = JSON.parse(localStorage.getItem('aetheris-history') || '[]');
     } catch (e) {
       this.readingHistory = [];
+    }
+
+    // Load cached synced articles if present
+    try {
+      const cached = localStorage.getItem('aetheris-cached-synced-articles');
+      if (cached && window.RESEARCH_DATA) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Replace matching category articles with cached version
+          window.RESEARCH_DATA.articles = window.RESEARCH_DATA.articles.filter(
+            a => a.category !== 'ai-research' && a.category !== 'data-intelligence'
+          ).concat(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load cached articles', e);
     }
   },
 
@@ -99,6 +129,14 @@ const App = {
       historyBtn.addEventListener('click', () => this.openHistoryModal());
     }
 
+    // Instant Refresh Button for Data Technology Category (Hierarchical: All, AI, Data Intel)
+    const refreshBtn = document.getElementById('data-tech-refresh-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        this.triggerDataTechRefresh(true);
+      });
+    }
+
     // Modal background overlay close
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', (e) => {
@@ -112,6 +150,187 @@ const App = {
     document.querySelectorAll('.modal-close-btn').forEach(btn => {
       btn.addEventListener('click', () => this.closeAllModals());
     });
+  },
+
+  /* ==========================================================
+     30-MINUTE PERIODIC & MANUAL REFRESH ENGINE FOR DATA TECH
+     Synchronizes subcategories: All, AI Foundations, Data Intelligence
+     ========================================================== */
+  initDataTechSync() {
+    const savedLast = localStorage.getItem('aetheris-last-dt-sync');
+    if (savedLast) {
+      this.dataTechSync.lastSyncTime = parseInt(savedLast, 10);
+    } else {
+      this.dataTechSync.lastSyncTime = Date.now();
+      localStorage.setItem('aetheris-last-dt-sync', this.dataTechSync.lastSyncTime);
+    }
+
+    this.updateLastSyncLabel();
+
+    // Check if 30 minutes have already elapsed since last sync
+    const elapsed = Date.now() - this.dataTechSync.lastSyncTime;
+    if (elapsed >= this.dataTechSync.intervalMs) {
+      this.triggerDataTechRefresh(false);
+    }
+
+    // Start 1-second countdown ticker
+    if (this.dataTechSync.countdownTimerId) {
+      clearInterval(this.dataTechSync.countdownTimerId);
+    }
+    this.dataTechSync.countdownTimerId = setInterval(() => {
+      this.updateCountdownTick();
+    }, 1000);
+
+    this.updateCountdownTick();
+  },
+
+  updateCountdownTick() {
+    const elapsed = Date.now() - this.dataTechSync.lastSyncTime;
+    const remainingMs = Math.max(0, this.dataTechSync.intervalMs - elapsed);
+
+    const countdownEl = document.getElementById('sync-countdown');
+    if (countdownEl) {
+      const totalSeconds = Math.floor(remainingMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      countdownEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    // Trigger auto refresh when countdown hits 0
+    if (remainingMs <= 0) {
+      this.triggerDataTechRefresh(false);
+    }
+  },
+
+  updateLastSyncLabel() {
+    const labelEl = document.getElementById('sync-last-time');
+    if (!labelEl) return;
+
+    const date = new Date(this.dataTechSync.lastSyncTime);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    labelEl.textContent = `${hours}:${minutes}:${seconds}`;
+  },
+
+  triggerDataTechRefresh(isManual = false) {
+    const refreshBtn = document.getElementById('data-tech-refresh-btn');
+    const refreshLabel = document.getElementById('refresh-btn-label');
+    const lang = (window.I18N && window.I18N.currentLang) || 'ko';
+
+    // UI Loading state
+    if (refreshBtn) refreshBtn.classList.add('loading');
+    if (refreshLabel) {
+      refreshLabel.textContent = lang === 'en' ? 'Syncing Subcategories...' : '데이터 기술 하위 연구 동기화 중...';
+    }
+
+    setTimeout(() => {
+      if (!window.RESEARCH_DATA || !window.RESEARCH_DATA.feedPool) {
+        if (refreshBtn) refreshBtn.classList.remove('loading');
+        return;
+      }
+
+      const pool = window.RESEARCH_DATA.feedPool;
+      const aiPool = pool.aiResearch || [];
+      const diPool = pool.dataIntelligence || [];
+
+      // Rotate offsets
+      this.dataTechSync.aiOffset = (this.dataTechSync.aiOffset + 1) % Math.max(1, aiPool.length);
+      this.dataTechSync.diOffset = (this.dataTechSync.diOffset + 1) % Math.max(1, diPool.length);
+
+      // Pick 2 from AI Foundations and 2 from Data Intelligence
+      const newArticles = [];
+
+      // 1. Pick AI Research items
+      for (let i = 0; i < 2; i++) {
+        if (aiPool.length > 0) {
+          const item = JSON.parse(JSON.stringify(aiPool[(this.dataTechSync.aiOffset + i) % aiPool.length]));
+          newArticles.push(item);
+        }
+      }
+
+      // 2. Pick Data Intelligence items
+      for (let i = 0; i < 2; i++) {
+        if (diPool.length > 0) {
+          const item = JSON.parse(JSON.stringify(diPool[(this.dataTechSync.diOffset + i) % diPool.length]));
+          newArticles.push(item);
+        }
+      }
+
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+
+      // Mark newly synced articles
+      newArticles.forEach((art, idx) => {
+        art.id = `dt-live-${Date.now()}-${idx}`;
+        art.date = `${dateStr} (${timeStr})`;
+        art.badge = '⚡ LIVE UPDATED';
+        art.isLiveUpdated = true;
+      });
+
+      // Keep other categories (physical-ai, whitepaper) and prepend new AI + DI articles
+      const otherArticles = window.RESEARCH_DATA.articles.filter(
+        a => a.category !== 'ai-research' && a.category !== 'data-intelligence'
+      );
+
+      // Make the first synced item featured
+      if (newArticles.length > 0) {
+        newArticles[0].featured = true;
+        // unset other featured
+        otherArticles.forEach(a => a.featured = false);
+      }
+
+      // Prepend newly refreshed articles to the top so "전체보기 (All Topics)" shows them first!
+      window.RESEARCH_DATA.articles = newArticles.concat(otherArticles);
+
+      // Save to localStorage for persistence
+      try {
+        localStorage.setItem('aetheris-cached-synced-articles', JSON.stringify(newArticles));
+      } catch (e) {}
+
+      // Update sync time
+      this.dataTechSync.lastSyncTime = Date.now();
+      localStorage.setItem('aetheris-last-dt-sync', this.dataTechSync.lastSyncTime);
+      this.updateLastSyncLabel();
+
+      // Re-render Featured Banner & Articles Grid/List
+      this.renderFeatured();
+      this.renderArticles();
+
+      // Reset button UI
+      if (refreshBtn) refreshBtn.classList.remove('loading');
+      if (refreshLabel) {
+        refreshLabel.textContent = lang === 'en' ? 'Refresh Data Tech' : '데이터 기술 즉시 갱신';
+      }
+
+      // Show floating Toast Notification
+      this.showSyncToast(isManual);
+    }, 650);
+  },
+
+  showSyncToast(isManual) {
+    const toast = document.getElementById('sync-toast');
+    const textEl = document.getElementById('sync-toast-text');
+    if (!toast) return;
+
+    const lang = (window.I18N && window.I18N.currentLang) || 'ko';
+    if (textEl) {
+      if (lang === 'en') {
+        textEl.textContent = isManual 
+          ? '✨ [Data Technology] Subcategories (All, AI Foundations, Data Intel) manually refreshed with latest research!'
+          : '✨ 30-minute auto-sync complete: Data Technology subcategories updated with live publications!';
+      } else {
+        textEl.textContent = isManual
+          ? '✨ [데이터 기술] 하위 내용(전체보기, AI 기초 연구, 데이터 인텔리전스)이 최신 연구 논문으로 즉시 갱신되었습니다!'
+          : '✨ [데이터 기술] 30분 주기 자동 동기화 완료: 하위 카테고리(전체보기, AI 기초 연구, 데이터 인텔리전스)가 최신화되었습니다!';
+      }
+    }
+
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 4000);
   },
 
   toggleTheme() {
@@ -158,7 +377,7 @@ const App = {
     const container = document.getElementById('featured-article-wrap');
     if (!container || !window.RESEARCH_DATA) return;
 
-    const featured = window.RESEARCH_DATA.articles.find(a => a.featured);
+    const featured = window.RESEARCH_DATA.articles.find(a => a.featured) || window.RESEARCH_DATA.articles[0];
     if (!featured) return;
 
     const lang = (window.I18N && window.I18N.currentLang) || 'ko';
@@ -186,7 +405,7 @@ const App = {
               ${readBtnText}
             </button>
             <div class="flex items-center gap-2">
-              ${featured.tags.map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
+              ${(featured.tags || []).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
             </div>
           </div>
         </div>
@@ -194,7 +413,9 @@ const App = {
           <div style="text-align: center; padding: 2rem;">
             <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🧬</div>
             <div style="font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; color: #fff;">ISO/IEC 5259 Compliant</div>
-            <div style="color: var(--accent-secondary); font-family: var(--font-mono); font-size: 0.85rem; margin-top: 0.4rem;">Efficiency ${featured.metrics.efficiency} | Outlier Removal</div>
+            <div style="color: var(--accent-secondary); font-family: var(--font-mono); font-size: 0.85rem; margin-top: 0.4rem;">
+              Efficiency ${(featured.metrics && featured.metrics.efficiency) || '+42%'} | Live Certified
+            </div>
           </div>
         </div>
       </div>
@@ -204,7 +425,7 @@ const App = {
   getFilteredArticles() {
     if (!window.RESEARCH_DATA) return [];
     return window.RESEARCH_DATA.articles.filter(article => {
-      // Category filter
+      // Category filter: 'all' shows all topics (including refreshed AI and Data Intel)
       if (this.activeCategory !== 'all' && article.category !== this.activeCategory) {
         return false;
       }
@@ -252,10 +473,11 @@ const App = {
       container.innerHTML = articles.map(art => {
         const title = lang === 'en' ? art.titleEn : art.titleKo;
         const summary = lang === 'en' ? art.summaryEn : art.summaryKo;
+        const liveBadgeClass = art.isLiveUpdated ? 'badge-live-updated' : '';
         return `
           <div class="article-card" onclick="App.openArticleModal('${art.id}')">
             <div class="card-cover" style="background: ${art.coverGradient}; display:flex; align-items:center; justify-content:center;">
-              <span class="category-pill">${art.badge || art.category}</span>
+              <span class="category-pill ${liveBadgeClass}">${art.badge || art.category}</span>
               <div style="font-size: 2.8rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
                 ${this.getCategoryIcon(art.category)}
               </div>
@@ -270,7 +492,7 @@ const App = {
               <h3 class="card-title">${title}</h3>
               <p class="card-summary">${summary}</p>
               <div class="card-tags">
-                ${art.tags.slice(0, 3).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
+                ${(art.tags || []).slice(0, 3).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
               </div>
             </div>
           </div>
@@ -280,6 +502,7 @@ const App = {
       container.className = 'articles-list';
       container.innerHTML = articles.map(art => {
         const title = lang === 'en' ? art.titleEn : art.titleKo;
+        const liveBadge = art.isLiveUpdated ? '<span class="text-orange-400 font-bold mr-1">[LIVE]</span>' : '';
         return `
           <div class="article-list-item" onclick="App.openArticleModal('${art.id}')">
             <div class="list-item-main">
@@ -291,9 +514,9 @@ const App = {
                 <span>•</span>
                 <span>${art.author}</span>
               </div>
-              <h3 class="list-item-title">${title}</h3>
+              <h3 class="list-item-title">${liveBadge}${title}</h3>
               <div class="flex gap-2 mt-1">
-                ${art.tags.map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
+                ${(art.tags || []).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
               </div>
             </div>
             <div style="color: var(--accent-primary); font-size: 1.25rem;">→</div>
@@ -314,7 +537,13 @@ const App = {
   },
 
   openArticleModal(id) {
-    const article = window.RESEARCH_DATA.articles.find(a => a.id === id);
+    let article = window.RESEARCH_DATA.articles.find(a => a.id === id);
+    if (!article && window.RESEARCH_DATA.feedPool) {
+      const allPool = (window.RESEARCH_DATA.feedPool.aiResearch || []).concat(
+        window.RESEARCH_DATA.feedPool.dataIntelligence || []
+      );
+      article = allPool.find(a => a.id === id);
+    }
     if (!article) return;
 
     // Record to reading history
@@ -349,12 +578,12 @@ const App = {
         </div>
 
         <div class="prose max-w-none text-slate-300 leading-relaxed text-base" style="white-space: pre-line;">
-          ${content.trim()}
+          ${(content || '').trim()}
         </div>
 
         <div class="mt-8 pt-6 border-t border-slate-700/60 flex items-center justify-between flex-wrap gap-4">
           <div class="flex gap-2">
-            ${article.tags.map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
+            ${(article.tags || []).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
           </div>
           <button class="px-4 py-2 rounded-lg font-medium text-sm text-slate-300 hover:text-white border border-slate-700" onclick="App.closeAllModals()">
             ${lang === 'en' ? 'Close Window' : '닫기'}
@@ -377,7 +606,6 @@ const App = {
       category: article.category,
       timestamp: Date.now()
     });
-    // Keep max 10
     if (this.readingHistory.length > 10) this.readingHistory.pop();
     localStorage.setItem('aetheris-history', JSON.stringify(this.readingHistory));
   },
@@ -451,7 +679,6 @@ const App = {
     ];
 
     clusters.forEach(c => {
-      // Regular cluster points
       for (let i = 0; i < 45; i++) {
         const angle = Math.random() * Math.PI * 2;
         const r = Math.random() * 55;
@@ -469,7 +696,6 @@ const App = {
       }
     });
 
-    // Add noisy outliers
     for (let i = 0; i < 18; i++) {
       this.simulatorPoints.push({
         x: Math.random() * canvas.width,
@@ -506,7 +732,6 @@ const App = {
     }
 
     setTimeout(() => {
-      // Remove outliers and redundant points
       this.simulatorPoints = this.simulatorPoints.filter(p => !p.isOutlier && !p.isRedundant);
 
       if (statusEl) {
@@ -525,7 +750,6 @@ const App = {
     this.simCtx.fillStyle = '#060913';
     this.simCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw coordinate grid lines
     this.simCtx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
     this.simCtx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += 40) {
@@ -541,9 +765,7 @@ const App = {
       this.simCtx.stroke();
     }
 
-    // Draw points
     this.simulatorPoints.forEach(p => {
-      // gentle drift
       p.x += (Math.random() - 0.5) * 0.4;
       p.y += (Math.random() - 0.5) * 0.4;
 

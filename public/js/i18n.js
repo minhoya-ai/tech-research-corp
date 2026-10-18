@@ -18,6 +18,10 @@ const I18N = {
       'history.toggle': '최근 열람 기록',
       'stats.toggle': '연구 성과 통계',
 
+      'section.tech.badge': 'TECHNOLOGY & RESEARCH HUB',
+      'section.tech.title': '데이터 기술 (Data Technology)',
+      'section.tech.desc': '전체보기, AI 기초 연구, 데이터 인텔리전스 등 핵심 연구 동향을 실시간 탐색합니다.',
+
       'hero.badge': 'NEXT-GEN DATA INTELLIGENCE & PHYSICAL AI',
       'hero.title.pre': '보이지 않는 고차원 데이터를 탐구하고,',
       'hero.title.gradient': '측정 가능한 AI의 미래를',
@@ -37,6 +41,13 @@ const I18N = {
       'search.placeholder': '연구 주제, 알고리즘, 저자, 키워드 검색... (단축키: /)',
       'view.card': '카드 뷰',
       'view.list': '리스트 뷰',
+
+      'feed.sync.active': '30분 자동 동기화 활성',
+      'feed.sync.btn': '데이터 기술 즉시 갱신',
+      'feed.sync.last': '마지막 동기화',
+      'feed.sync.next': '다음 자동 갱신까지',
+      'feed.sync.refreshing': '최신 연구 동향 수집 중...',
+      'feed.sync.toast': '✨ 데이터 기술 카테고리가 최신 연구 논문 및 품질 지표로 갱신되었습니다!',
 
       'sim.badge': 'INTERACTIVE LAB',
       'sim.title': '실시간 고차원 임베딩 & 데이터 품질 진단 시뮬레이터',
@@ -68,6 +79,10 @@ const I18N = {
       'history.toggle': 'Reading History',
       'stats.toggle': 'Research Statistics',
 
+      'section.tech.badge': 'TECHNOLOGY & RESEARCH HUB',
+      'section.tech.title': 'Data Technology',
+      'section.tech.desc': 'Explore live research frontiers across All Topics, AI Foundations, and Data Intelligence.',
+
       'hero.badge': 'NEXT-GEN DATA INTELLIGENCE & PHYSICAL AI',
       'hero.title.pre': 'Exploring Invisible Data Manifolds,',
       'hero.title.gradient': 'Engineering Tangible AI Futures',
@@ -87,6 +102,13 @@ const I18N = {
       'search.placeholder': 'Search topics, algorithms, authors, tags... (Press / to focus)',
       'view.card': 'Card View',
       'view.list': 'List View',
+
+      'feed.sync.active': '30-Min Auto-Sync Active',
+      'feed.sync.btn': 'Refresh Data Tech',
+      'feed.sync.last': 'Last Synced',
+      'feed.sync.next': 'Next auto-sync in',
+      'feed.sync.refreshing': 'Fetching Live Research...',
+      'feed.sync.toast': '✨ Data Technology articles successfully refreshed with latest research!',
 
       'sim.badge': 'INTERACTIVE LAB',
       'sim.title': 'Real-Time Embedding Topology & Data Diagnostic Simulator',

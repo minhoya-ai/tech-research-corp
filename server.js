@@ -60,6 +60,15 @@ app.get('/api/categories', (req, res) => {
   res.json(researchData.categories);
 });
 
+// 5. Get data-tech live feed pool
+app.get('/api/data-tech/feed', (req, res) => {
+  res.json({
+    pool: researchData.dataTechPool || [],
+    syncIntervalMinutes: 30,
+    serverTime: new Date().toISOString()
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'Aetheris AI Portal', timestamp: new Date().toISOString() });

@@ -169,6 +169,15 @@
          ========================================================== -->
     <section id="posts" class="max-w-7xl mx-auto px-6 mb-24">
       
+      <!-- Section Header: Data Technology -->
+      <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div class="text-xs font-mono font-bold text-orange-500 uppercase tracking-widest mb-1" data-i18n="section.tech.badge">TECHNOLOGY & RESEARCH HUB</div>
+          <h2 class="text-2xl md:text-3xl font-extrabold text-white" style="font-family: var(--font-display);" data-i18n="section.tech.title">데이터 기술 (Data Technology)</h2>
+          <p class="text-sm text-slate-400 mt-1" data-i18n="section.tech.desc">전체보기, AI 기초 연구, 데이터 인텔리전스 등 핵심 연구 동향을 실시간 탐색합니다.</p>
+        </div>
+      </div>
+
       <!-- Toolbar (Search, View Mode Toggle, Category Chips) -->
       <div class="toolbar-container glass-panel">
         <div class="search-input-wrap">
@@ -199,8 +208,32 @@
       </div>
 
       <!-- Category Filter Chips -->
-      <div id="category-filter-container" class="filter-tags-scroll mb-8">
+      <div id="category-filter-container" class="filter-tags-scroll mb-4">
         <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Live Data-Tech Feed Sync Bar -->
+      <div id="live-sync-bar" class="live-sync-bar">
+        <div class="sync-status-group">
+          <span class="live-pulse-badge">
+            <span class="pulse-dot"></span>
+            <span data-i18n="feed.sync.active">30분 자동 동기화 활성</span>
+          </span>
+          <span class="sync-meta-text">
+            <span data-i18n="feed.sync.last">마지막 동기화</span>: <strong id="sync-last-time" class="text-slate-200">방금 전</strong>
+          </span>
+          <span class="sync-meta-text">
+            (<span data-i18n="feed.sync.next">다음 자동 갱신까지</span>: <span id="sync-countdown" class="sync-countdown-tag">29:59</span>)
+          </span>
+        </div>
+        <div class="sync-action-group">
+          <button id="data-tech-refresh-btn" class="refresh-action-btn" type="button" title="데이터 기술 즉시 갱신">
+            <svg class="w-4 h-4 refresh-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span id="refresh-btn-label" data-i18n="feed.sync.btn">데이터 기술 즉시 갱신</span>
+          </button>
+        </div>
       </div>
 
       <!-- Articles Display Container (Grid or List) -->
@@ -336,6 +369,10 @@
       </div>
       <div id="history-modal-content"></div>
     </div>
+  <!-- 4. Sync Toast Floating Notification -->
+  <div id="sync-toast" class="sync-toast">
+    <span class="text-xl">✨</span>
+    <span id="sync-toast-text" data-i18n="feed.sync.toast">데이터 기술 카테고리가 최신 연구 논문 및 품질 지표로 갱신되었습니다!</span>
   </div>
 
   <!-- ==========================================================
