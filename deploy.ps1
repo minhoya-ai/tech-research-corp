@@ -17,17 +17,42 @@ Write-Host ""
 git remote remove origin 2>$null
 git remote add origin https://github.com/minhoya-ai/tech-research-corp.git
 
-Write-Host "Please enter your GitHub Personal Access Token (PAT) for minhoya-ai:" -ForegroundColor Yellow
-$token = Read-Host "Token (starts with ghp_)"
+# 1. Check if token already exists in Windows Environment or .env file
+$token = $env:GITHUB_TOKEN
 
-if ([string]::IsNullOrWhiteSpace($token)) {
-    Write-Host ""
-    Write-Host "[ERROR] Token cannot be empty. Aborted." -ForegroundColor Red
-    Read-Host "Press Enter to exit..."
-    exit 1
+if ([string]::IsNullOrWhiteSpace($token) -and (Test-Path "$PSScriptRoot\.env")) {
+    $envContent = Get-Content "$PSScriptRoot\.env" -ErrorAction SilentlyContinue
+    foreach ($line in $envContent) {
+        if ($line -match "^\s*GITHUB_TOKEN\s*=\s*(.+)$") {
+            $token = $matches[1].Trim(' "''')
+            Write-Host "[OK] Loaded GitHub Token from .env file." -ForegroundColor Green
+            break
+        }
+    }
 }
 
-$token = $token.Trim()
+# 2. If not found, prompt user
+if ([string]::IsNullOrWhiteSpace($token)) {
+    Write-Host "Please enter your GitHub Personal Access Token (PAT) for minhoya-ai:" -ForegroundColor Yellow
+    $token = Read-Host "Token (starts with ghp_)"
+    
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        Write-Host ""
+        Write-Host "[ERROR] Token cannot be empty. Aborted." -ForegroundColor Red
+        Read-Host "Press Enter to exit..."
+        exit 1
+    }
+    
+    $token = $token.Trim()
+    
+    # Offer to save token into .env file
+    Write-Host ""
+    $saveChoice = Read-Host "Would you like to save this token to .env for future automatic pushes? (y/n)"
+    if ($saveChoice -eq 'y' -or $saveChoice -eq 'Y') {
+        Set-Content -Path "$PSScriptRoot\.env" -Value "GITHUB_TOKEN=$token"
+        Write-Host "[OK] Token saved to $PSScriptRoot\.env (ignored by git)" -ForegroundColor Green
+    }
+}
 
 Write-Host ""
 Write-Host "[Uploading files to GitHub main branch...]" -ForegroundColor Green
@@ -37,7 +62,6 @@ Write-Host ""
 git push -u "https://minhoya-ai:$token@github.com/minhoya-ai/tech-research-corp.git" main
 
 if ($LASTEXITCODE -eq 0) {
-    # Store credential for future pushes without asking again
     git config credential.helper store
     git remote set-url origin https://github.com/minhoya-ai/tech-research-corp.git
     
@@ -53,7 +77,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "======================================================================" -ForegroundColor Green
 } else {
     Write-Host ""
-    Write-Host "[ERROR] Push failed. Please check your token permissions (repo scope required)." -ForegroundColor Red
+    Write-Host "[ERROR] Push failed. Please check your token permissions (repo and workflow scopes required)." -ForegroundColor Red
 }
 
 Write-Host ""
