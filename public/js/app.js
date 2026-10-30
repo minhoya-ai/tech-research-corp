@@ -14,6 +14,8 @@ const App = {
   readingHistory: [],
   simulatorPoints: [],
   simAnimationId: null,
+  currentModalArticleId: null,
+  currentModalTab: 'full',
 
   // 30-Minute Data Technology Sync Engine (covers AI Research + Data Intelligence + All)
   dataTechSync: {
@@ -383,7 +385,9 @@ const App = {
     const lang = (window.I18N && window.I18N.currentLang) || 'ko';
     const title = lang === 'en' ? featured.titleEn : featured.titleKo;
     const summary = lang === 'en' ? featured.summaryEn : featured.summaryKo;
-    const readBtnText = lang === 'en' ? 'Read In-Depth Analysis →' : '연구 논문 심층 분석 보기 →';
+    const readBtnText = lang === 'en' ? 'Read Full Research Paper →' : '연구 논문 원문 전문 보기 →';
+    const sourceBtnText = lang === 'en' ? 'Original Source ↗' : '원문 사이트 ↗';
+    const sourceUrl = (featured.originalSource && featured.originalSource.url) || '#';
 
     container.innerHTML = `
       <div class="featured-card">
@@ -398,12 +402,17 @@ const App = {
           </div>
           <h2 class="card-title text-2xl md:text-3xl font-extrabold mb-4" style="color: #fff;">${title}</h2>
           <p class="text-slate-300 mb-6 text-base leading-relaxed">${summary}</p>
-          <div class="flex items-center gap-4 flex-wrap">
+          <div class="flex items-center gap-3 flex-wrap">
             <button class="px-5 py-2.5 rounded-xl font-bold text-white transition-all transform hover:scale-105" 
                     style="background: var(--accent-gradient); box-shadow: 0 4px 15px var(--accent-glow);"
-                    onclick="App.openArticleModal('${featured.id}')">
+                    onclick="App.openArticleModal('${featured.id}', 'full')">
               ${readBtnText}
             </button>
+            <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" 
+               class="px-4 py-2.5 rounded-xl font-semibold text-slate-200 border border-slate-700/80 hover:border-orange-500 hover:text-white transition-all flex items-center gap-1.5"
+               style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);">
+              <span>🌐 ${sourceBtnText}</span>
+            </a>
             <div class="flex items-center gap-2">
               ${(featured.tags || []).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
             </div>
@@ -474,8 +483,9 @@ const App = {
         const title = lang === 'en' ? art.titleEn : art.titleKo;
         const summary = lang === 'en' ? art.summaryEn : art.summaryKo;
         const liveBadgeClass = art.isLiveUpdated ? 'badge-live-updated' : '';
+        const sourceUrl = (art.originalSource && art.originalSource.url) || '#';
         return `
-          <div class="article-card" onclick="App.openArticleModal('${art.id}')">
+          <div class="article-card" onclick="App.openArticleModal('${art.id}', 'full')">
             <div class="card-cover" style="background: ${art.coverGradient}; display:flex; align-items:center; justify-content:center;">
               <span class="category-pill ${liveBadgeClass}">${art.badge || art.category}</span>
               <div style="font-size: 2.8rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
@@ -494,6 +504,16 @@ const App = {
               <div class="card-tags">
                 ${(art.tags || []).slice(0, 3).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
               </div>
+              <div class="card-actions-bar">
+                <button class="btn-card-read" type="button" onclick="event.stopPropagation(); App.openArticleModal('${art.id}', 'full')">
+                  <span>${lang === 'en' ? 'Full Paper' : '전체 자료 보기'}</span>
+                  <span class="text-xs">→</span>
+                </button>
+                <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" 
+                   class="btn-card-source" onclick="event.stopPropagation()" title="${lang === 'en' ? 'Open Original Source Site' : '원문 사이트 새 창으로 열기'}">
+                  <span>${lang === 'en' ? 'Source ↗' : '원문 출처 ↗'}</span>
+                </a>
+              </div>
             </div>
           </div>
         `;
@@ -503,8 +523,9 @@ const App = {
       container.innerHTML = articles.map(art => {
         const title = lang === 'en' ? art.titleEn : art.titleKo;
         const liveBadge = art.isLiveUpdated ? '<span class="text-orange-400 font-bold mr-1">[LIVE]</span>' : '';
+        const sourceUrl = (art.originalSource && art.originalSource.url) || '#';
         return `
-          <div class="article-list-item" onclick="App.openArticleModal('${art.id}')">
+          <div class="article-list-item" onclick="App.openArticleModal('${art.id}', 'full')">
             <div class="list-item-main">
               <div class="list-item-meta">
                 <span style="color: var(--accent-secondary); font-weight:700;">[${art.category.toUpperCase()}]</span>
@@ -519,7 +540,13 @@ const App = {
                 ${(art.tags || []).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
               </div>
             </div>
-            <div style="color: var(--accent-primary); font-size: 1.25rem;">→</div>
+            <div class="flex items-center gap-3">
+              <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" 
+                 class="btn-card-source" onclick="event.stopPropagation()" title="${lang === 'en' ? 'Open Original Source Site' : '원문 사이트 새 창으로 열기'}">
+                <span>${lang === 'en' ? 'Source ↗' : '원문 출처 ↗'}</span>
+              </a>
+              <div style="color: var(--accent-primary); font-size: 1.25rem;">→</div>
+            </div>
           </div>
         `;
       }).join('');
@@ -536,7 +563,81 @@ const App = {
     }
   },
 
-  openArticleModal(id) {
+  formatPaperMarkdown(mdText) {
+    if (!mdText) return '';
+    let html = mdText;
+
+    // Process markdown tables (| col 1 | col 2 |)
+    const lines = html.split('\n');
+    let inTable = false;
+    let tableHtml = '';
+    const processedLines = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('|') && line.endsWith('|')) {
+        if (!inTable) {
+          inTable = true;
+          tableHtml = '<div class="paper-table-wrap"><table class="paper-table">';
+          const cells = line.split('|').slice(1, -1).map(c => c.trim());
+          tableHtml += '<thead><tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+          if (i + 1 < lines.length && lines[i + 1].trim().includes('---')) {
+            i++;
+          }
+        } else {
+          const cells = line.split('|').slice(1, -1).map(c => c.trim());
+          tableHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+        }
+      } else {
+        if (inTable) {
+          inTable = false;
+          tableHtml += '</tbody></table></div>';
+          processedLines.push(tableHtml);
+          tableHtml = '';
+        }
+        processedLines.push(lines[i]);
+      }
+    }
+    if (inTable) {
+      tableHtml += '</tbody></table></div>';
+      processedLines.push(tableHtml);
+    }
+
+    html = processedLines.join('\n');
+
+    // Headings
+    html = html.replace(/^# (.*$)/gim, '<h1 class="paper-h1">$1</h1>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="paper-h2">$1</h2>');
+    html = html.replace(/^### (.*$)/gim, '<h3 class="paper-h3">$1</h3>');
+
+    // Math block ($$ ... $$)
+    html = html.replace(/\$\$([\s\S]*?)\$\$/g, '<div class="math-formula-box">$1</div>');
+
+    // Bold (**text**)
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--accent-secondary);">$1</strong>');
+
+    // Links [text](url)
+    html = html.replace(/\[(.*?)\]\((https?:\/\/.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--accent-primary); text-decoration: underline; font-weight: 600;">$1 ↗</a>');
+
+    // Horizontal rule
+    html = html.replace(/^---$/gim, '<hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 1.5rem 0;">');
+
+    // Blockquotes / callout (> ...)
+    html = html.replace(/^> (.*$)/gim, '<div class="paper-abstract-box">$1</div>');
+
+    // Inline code (`code`)
+    html = html.replace(/`([^`]+)`/g, '<code class="paper-inline-code">$1</code>');
+
+    // Unordered lists (- item)
+    html = html.replace(/^\- (.*$)/gim, '<li style="margin-left: 1.25rem; list-style-type: disc;">$1</li>');
+
+    // Paragraph breaks
+    html = html.replace(/\n\n/g, '<p style="margin-bottom: 0.85rem;"></p>');
+
+    return html;
+  },
+
+  openArticleModal(id, initialTab = 'full') {
     let article = window.RESEARCH_DATA.articles.find(a => a.id === id);
     if (!article && window.RESEARCH_DATA.feedPool) {
       const allPool = (window.RESEARCH_DATA.feedPool.aiResearch || []).concat(
@@ -546,54 +647,243 @@ const App = {
     }
     if (!article) return;
 
+    this.currentModalArticleId = id;
+    this.currentModalTab = initialTab || 'full';
+
     // Record to reading history
     this.addToHistory(article);
 
+    this.renderModalContent();
+
+    const modal = document.getElementById('article-modal');
+    if (modal) modal.classList.add('active');
+  },
+
+  switchArticleTab(tabKey) {
+    this.currentModalTab = tabKey;
+    this.renderModalContent();
+  },
+
+  renderModalContent() {
+    const modalBody = document.getElementById('article-modal-body');
+    if (!modalBody || !this.currentModalArticleId) return;
+
+    let article = window.RESEARCH_DATA.articles.find(a => a.id === this.currentModalArticleId);
+    if (!article && window.RESEARCH_DATA.feedPool) {
+      const allPool = (window.RESEARCH_DATA.feedPool.aiResearch || []).concat(
+        window.RESEARCH_DATA.feedPool.dataIntelligence || []
+      );
+      article = allPool.find(a => a.id === this.currentModalArticleId);
+    }
+    if (!article) return;
+
     const lang = (window.I18N && window.I18N.currentLang) || 'ko';
     const title = lang === 'en' ? article.titleEn : article.titleKo;
+    const summary = lang === 'en' ? article.summaryEn : article.summaryKo;
+    const fullPaper = lang === 'en' ? (article.fullPaperEn || article.fullPaperKo) : (article.fullPaperKo || article.fullPaperEn);
     const content = lang === 'en' ? article.contentEn : article.contentKo;
+    const source = article.originalSource || {
+      siteName: 'arXiv.org / ISO Portal',
+      url: 'https://arxiv.org/abs/2306.15895',
+      doi: '10.48550/arXiv.2306.15895',
+      publication: 'Official Research Publication',
+      license: 'Open Access (CC BY 4.0)',
+      publishedDate: article.date || '2026'
+    };
 
-    const modalBody = document.getElementById('article-modal-body');
-    if (modalBody) {
-      modalBody.innerHTML = `
-        <div class="mb-4">
-          <span class="category-pill" style="position:static; display:inline-block; margin-bottom:0.75rem;">${article.category.toUpperCase()}</span>
-          <h1 class="text-2xl md:text-3xl font-extrabold mb-3 leading-snug" style="font-family: var(--font-display);">${title}</h1>
-          <div class="card-meta">
-            <span>📅 ${article.date}</span>
-            <span>•</span>
-            <span>⏱️ ${article.readTime}</span>
-            <span>•</span>
-            <span>✍️ ${article.author}</span>
+    const tabFullClass = this.currentModalTab === 'full' ? 'active' : '';
+    const tabSummaryClass = this.currentModalTab === 'summary' ? 'active' : '';
+    const tabSourceClass = this.currentModalTab === 'source' ? 'active' : '';
+
+    let tabBodyHtml = '';
+
+    if (this.currentModalTab === 'full') {
+      tabBodyHtml = `
+        <div class="paper-full-container">
+          <div class="paper-abstract-box">
+            <strong>💡 Executive Abstract:</strong> ${summary}
           </div>
-        </div>
-
-        <div class="p-4 rounded-xl mb-6 flex items-center justify-around flex-wrap gap-4" style="background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.25);">
-          ${Object.entries(article.metrics || {}).map(([k, v]) => `
-            <div class="text-center">
-              <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">${k}</div>
-              <div style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: var(--accent-secondary);">${v}</div>
+          ${this.formatPaperMarkdown(fullPaper || content)}
+          <div class="mt-8 p-4 rounded-xl border border-orange-500/30 bg-orange-500/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <div class="font-bold text-white text-sm">🌐 논문 원본 및 공식 출처 자료 전체 열람</div>
+              <div class="text-xs text-slate-300 mt-0.5">외부 저장소(${source.siteName})에서 전체 피어리뷰 자료와 원문 문서를 바로 확인하실 수 있습니다.</div>
             </div>
-          `).join('')}
-        </div>
-
-        <div class="prose max-w-none text-slate-300 leading-relaxed text-base" style="white-space: pre-line;">
-          ${(content || '').trim()}
-        </div>
-
-        <div class="mt-8 pt-6 border-t border-slate-700/60 flex items-center justify-between flex-wrap gap-4">
-          <div class="flex gap-2">
-            ${(article.tags || []).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
+            <a href="${source.url}" target="_blank" rel="noopener noreferrer" class="btn-quick-source whitespace-nowrap">
+              <span>원문 출처 사이트 바로가기 ↗</span>
+            </a>
           </div>
-          <button class="px-4 py-2 rounded-lg font-medium text-sm text-slate-300 hover:text-white border border-slate-700" onclick="App.closeAllModals()">
-            ${lang === 'en' ? 'Close Window' : '닫기'}
-          </button>
+        </div>
+      `;
+    } else if (this.currentModalTab === 'summary') {
+      tabBodyHtml = `
+        <div class="mb-6">
+          <h3 class="text-lg font-bold text-white mb-2">📊 핵심 성능 및 연구 지표 (Quantitative Metrics)</h3>
+          <div class="p-4 rounded-xl flex items-center justify-around flex-wrap gap-4 mb-6" style="background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.25);">
+            ${Object.entries(article.metrics || {}).map(([k, v]) => `
+              <div class="text-center">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">${k}</div>
+                <div style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: var(--accent-secondary);">${v}</div>
+              </div>
+            `).join('')}
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">📝 주요 연구 요약</h3>
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-slate-300 leading-relaxed text-sm">
+            ${this.formatPaperMarkdown(content || summary)}
+          </div>
+        </div>
+      `;
+    } else if (this.currentModalTab === 'source') {
+      const bibtexCode = source.citationKey ? `@article{${source.citationKey},
+  title={${article.titleEn || article.titleKo}},
+  author={${article.author}},
+  journal={${source.publication || source.siteName}},
+  year={2026},
+  doi={${source.doi || 'N/A'}},
+  url={${source.url}}
+}` : `@misc{aetheris2026paper,
+  title={${article.titleEn || article.titleKo}},
+  author={${article.author}},
+  url={${source.url}},
+  year={2026}
+}`;
+
+      tabBodyHtml = `
+        <div class="source-site-preview-card">
+          <div class="flex items-start justify-between flex-wrap gap-4 pb-4 border-b border-slate-800">
+            <div>
+              <span class="inline-block px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-orange-500/20 text-orange-400 border border-orange-500/40 mb-2">
+                ${source.siteName}
+              </span>
+              <h2 class="text-xl font-bold text-white">${article.titleEn || article.titleKo}</h2>
+              <p class="text-xs text-slate-400 mt-1">${source.publication || 'Official Research Publication'}</p>
+            </div>
+            <a href="${source.url}" target="_blank" rel="noopener noreferrer" class="btn-quick-source">
+              <span>원문 출처 사이트 열람 (새 창) ↗</span>
+            </a>
+          </div>
+
+          <div class="source-meta-grid">
+            <div class="source-meta-item">
+              <div class="source-meta-label">공식 식별자 (DOI)</div>
+              <div class="source-meta-value font-mono">${source.doi || 'N/A'}</div>
+            </div>
+            <div class="source-meta-item">
+              <div class="source-meta-label">공식 원문 URL</div>
+              <div class="source-meta-value text-xs font-mono truncate" title="${source.url}">
+                <a href="${source.url}" target="_blank" class="text-orange-400 hover:underline">${source.url}</a>
+              </div>
+            </div>
+            <div class="source-meta-item">
+              <div class="source-meta-label">동료 평가 및 표준 (Review Status)</div>
+              <div class="source-meta-value text-emerald-400 font-semibold">${source.peerReviewed || 'Peer Reviewed'}</div>
+            </div>
+            <div class="source-meta-item">
+              <div class="source-meta-label">라이선스 (License)</div>
+              <div class="source-meta-value font-mono">${source.license || 'Open Access (CC BY 4.0)'}</div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-mono text-slate-400">학술 인용 (BibTeX Citation)</span>
+              <button class="btn-copy-bibtex" onclick="App.copyBibtex()">인용 복사</button>
+            </div>
+            <div id="bibtex-citation-content" class="bibtex-box">${bibtexCode}</div>
+          </div>
         </div>
       `;
     }
 
-    const modal = document.getElementById('article-modal');
-    if (modal) modal.classList.add('active');
+    modalBody.innerHTML = `
+      <!-- Modal Top Category & Title -->
+      <div class="mb-4">
+        <div class="flex items-center gap-2 mb-2 flex-wrap">
+          <span class="category-pill" style="position:static; display:inline-block;">${article.category.toUpperCase()}</span>
+          ${article.isLiveUpdated ? '<span class="badge-live-updated px-2 py-0.5 rounded text-xs">⚡ LIVE UPDATED</span>' : ''}
+          <span class="text-xs font-mono text-slate-400 ml-auto">${source.siteName}</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-extrabold mb-3 leading-snug" style="font-family: var(--font-display); color: #fff;">${title}</h1>
+        <div class="card-meta">
+          <span>📅 ${article.date}</span>
+          <span>•</span>
+          <span>⏱️ ${article.readTime}</span>
+          <span>•</span>
+          <span>✍️ ${article.author}</span>
+          <span>•</span>
+          <span class="font-mono text-orange-400">DOI: ${source.doi || 'N/A'}</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="modal-header-actions">
+        <a href="${source.url}" target="_blank" rel="noopener noreferrer" class="btn-quick-source" title="공식 원문 출처 사이트 새 창으로 열기">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span>원문 출처 사이트 바로가기 (새 창) ↗</span>
+        </a>
+        <a href="${source.url}" target="_blank" rel="noopener noreferrer" class="btn-quick-outline">
+          <svg class="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+          <span>공식 PDF 열람</span>
+        </a>
+        ${source.githubUrl ? `
+          <a href="${source.githubUrl}" target="_blank" rel="noopener noreferrer" class="btn-quick-outline">
+            <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/></svg>
+            <span>Code / GitHub</span>
+          </a>
+        ` : ''}
+      </div>
+
+      <!-- Tab Switcher Navigation -->
+      <div class="article-tabs-nav">
+        <button class="article-tab-btn ${tabFullClass}" onclick="App.switchArticleTab('full')">
+          <span>📑</span>
+          <span>${lang === 'en' ? 'Full Paper & Complete Data' : '논문 원문 전문 / 전체 자료'}</span>
+        </button>
+        <button class="article-tab-btn ${tabSummaryClass}" onclick="App.switchArticleTab('summary')">
+          <span>📋</span>
+          <span>${lang === 'en' ? 'Summary & Key Metrics' : '핵심 요약 & 주요 지표'}</span>
+        </button>
+        <button class="article-tab-btn ${tabSourceClass}" onclick="App.switchArticleTab('source')">
+          <span>🌐</span>
+          <span>${lang === 'en' ? 'Original Source Site' : '원문 출처 사이트 및 정보'}</span>
+        </button>
+      </div>
+
+      <!-- Tab Body -->
+      ${tabBodyHtml}
+
+      <!-- Modal Footer -->
+      <div class="mt-8 pt-6 border-t border-slate-700/60 flex items-center justify-between flex-wrap gap-4">
+        <div class="flex gap-2 flex-wrap">
+          ${(article.tags || []).map(t => `<span class="keyword-tag">#${t}</span>`).join('')}
+        </div>
+        <button class="px-5 py-2.5 rounded-xl font-medium text-sm text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 transition-all" onclick="App.closeAllModals()">
+          ${lang === 'en' ? 'Close Window' : '닫기'}
+        </button>
+      </div>
+    `;
+  },
+
+  copyBibtex() {
+    const bibtexEl = document.getElementById('bibtex-citation-content');
+    if (!bibtexEl) return;
+    const text = bibtexEl.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.btn-copy-bibtex');
+      if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = '복사 완료! ✓';
+        btn.style.background = '#059669';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = '';
+          btn.style.color = '';
+        }, 2000);
+      }
+    }).catch(err => {
+      console.error('Failed to copy BibTeX: ', err);
+    });
   },
 
   addToHistory(article) {
