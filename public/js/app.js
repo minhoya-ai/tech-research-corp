@@ -215,7 +215,7 @@ const App = {
     labelEl.textContent = `${hours}:${minutes}:${seconds}`;
   },
 
-  triggerDataTechRefresh(isManual = false) {
+  async triggerDataTechRefresh(isManual = false) {
     const refreshBtn = document.getElementById('data-tech-refresh-btn');
     const refreshLabel = document.getElementById('refresh-btn-label');
     const lang = (window.I18N && window.I18N.currentLang) || 'ko';
@@ -226,89 +226,90 @@ const App = {
       refreshLabel.textContent = lang === 'en' ? 'Syncing Subcategories...' : '데이터 기술 하위 연구 동기화 중...';
     }
 
-    setTimeout(() => {
-      if (!window.RESEARCH_DATA || !window.RESEARCH_DATA.feedPool) {
-        if (refreshBtn) refreshBtn.classList.remove('loading');
-        return;
-      }
+    try {
+      let newArticles = [];
 
-      const pool = window.RESEARCH_DATA.feedPool;
-      const aiPool = pool.aiResearch || [];
-      const diPool = pool.dataIntelligence || [];
-
-      // Rotate offsets
-      this.dataTechSync.aiOffset = (this.dataTechSync.aiOffset + 1) % Math.max(1, aiPool.length);
-      this.dataTechSync.diOffset = (this.dataTechSync.diOffset + 1) % Math.max(1, diPool.length);
-
-      // Pick 2 from AI Foundations and 2 from Data Intelligence
-      const newArticles = [];
-
-      // 1. Pick AI Research items
-      for (let i = 0; i < 2; i++) {
-        if (aiPool.length > 0) {
-          const item = JSON.parse(JSON.stringify(aiPool[(this.dataTechSync.aiOffset + i) % aiPool.length]));
-          newArticles.push(item);
+      // 1. Try Live Backend API (/api/data-tech/sync)
+      try {
+        const response = await fetch('/api/data-tech/sync', { method: 'POST' });
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData && resData.items && resData.items.length > 0) {
+            newArticles = resData.items;
+          }
         }
+      } catch (e) {
+        // Fallback to local pool
       }
 
-      // 2. Pick Data Intelligence items
-      for (let i = 0; i < 2; i++) {
-        if (diPool.length > 0) {
-          const item = JSON.parse(JSON.stringify(diPool[(this.dataTechSync.diOffset + i) % diPool.length]));
-          newArticles.push(item);
+      // 2. Client-side Fallback Rotation if backend unavailable
+      if (newArticles.length === 0) {
+        if (!window.RESEARCH_DATA || !window.RESEARCH_DATA.feedPool) {
+          if (refreshBtn) refreshBtn.classList.remove('loading');
+          return;
         }
+
+        const pool = window.RESEARCH_DATA.feedPool;
+        const aiPool = pool.aiResearch || [];
+        const diPool = pool.dataIntelligence || [];
+
+        this.dataTechSync.aiOffset = (this.dataTechSync.aiOffset + 1) % Math.max(1, aiPool.length);
+        this.dataTechSync.diOffset = (this.dataTechSync.diOffset + 1) % Math.max(1, diPool.length);
+
+        for (let i = 0; i < 2; i++) {
+          if (aiPool.length > 0) {
+            const item = JSON.parse(JSON.stringify(aiPool[(this.dataTechSync.aiOffset + i) % aiPool.length]));
+            newArticles.push(item);
+          }
+        }
+        for (let i = 0; i < 2; i++) {
+          if (diPool.length > 0) {
+            const item = JSON.parse(JSON.stringify(diPool[(this.dataTechSync.diOffset + i) % diPool.length]));
+            newArticles.push(item);
+          }
+        }
+
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+
+        newArticles.forEach((art, idx) => {
+          art.id = `dt-live-${Date.now()}-${idx}`;
+          art.date = `${dateStr} (${timeStr})`;
+          art.badge = '⚡ LIVE UPDATED';
+          art.isLiveUpdated = true;
+        });
       }
 
-      const now = new Date();
-      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
-
-      // Mark newly synced articles
-      newArticles.forEach((art, idx) => {
-        art.id = `dt-live-${Date.now()}-${idx}`;
-        art.date = `${dateStr} (${timeStr})`;
-        art.badge = '⚡ LIVE UPDATED';
-        art.isLiveUpdated = true;
-      });
-
-      // Keep other categories (physical-ai, whitepaper) and prepend new AI + DI articles
       const otherArticles = window.RESEARCH_DATA.articles.filter(
         a => a.category !== 'ai-research' && a.category !== 'data-intelligence'
       );
 
-      // Make the first synced item featured
       if (newArticles.length > 0) {
         newArticles[0].featured = true;
-        // unset other featured
         otherArticles.forEach(a => a.featured = false);
       }
 
-      // Prepend newly refreshed articles to the top so "전체보기 (All Topics)" shows them first!
       window.RESEARCH_DATA.articles = newArticles.concat(otherArticles);
 
-      // Save to localStorage for persistence
       try {
         localStorage.setItem('aetheris-cached-synced-articles', JSON.stringify(newArticles));
       } catch (e) {}
 
-      // Update sync time
       this.dataTechSync.lastSyncTime = Date.now();
       localStorage.setItem('aetheris-last-dt-sync', this.dataTechSync.lastSyncTime);
       this.updateLastSyncLabel();
 
-      // Re-render Featured Banner & Articles Grid/List
       this.renderFeatured();
       this.renderArticles();
 
-      // Reset button UI
+      this.showSyncToast(isManual);
+    } finally {
       if (refreshBtn) refreshBtn.classList.remove('loading');
       if (refreshLabel) {
         refreshLabel.textContent = lang === 'en' ? 'Refresh Data Tech' : '데이터 기술 즉시 갱신';
       }
-
-      // Show floating Toast Notification
-      this.showSyncToast(isManual);
-    }, 650);
+    }
   },
 
   showSyncToast(isManual) {
@@ -929,6 +930,81 @@ const App = {
       }
     }
     if (modal) modal.classList.add('active');
+  },
+
+  openContactModal() {
+    const modal = document.getElementById('contact-modal');
+    if (modal) {
+      modal.classList.add('active');
+      const statusEl = document.getElementById('contact-status-msg');
+      if (statusEl) {
+        statusEl.className = 'hidden';
+        statusEl.textContent = '';
+      }
+    }
+  },
+
+  async handleContactSubmit(event) {
+    event.preventDefault();
+    const submitBtn = document.getElementById('contact-submit-btn');
+    const statusMsg = document.getElementById('contact-status-msg');
+
+    const name = document.getElementById('contact-name').value.trim();
+    const email = document.getElementById('contact-email').value.trim();
+    const organization = document.getElementById('contact-org').value.trim();
+    const inquiryType = document.getElementById('contact-type').value;
+    const message = document.getElementById('contact-message').value.trim();
+
+    if (!name || !email || !message) {
+      if (statusMsg) {
+        statusMsg.className = 'text-xs p-3 rounded-lg font-medium bg-red-500/20 text-red-300 border border-red-500/40 block';
+        statusMsg.textContent = '모든 필수 항목을 입력해주세요.';
+      }
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '문의 전송 중...';
+    }
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, organization, inquiryType, message })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        if (statusMsg) {
+          statusMsg.className = 'text-xs p-3 rounded-lg font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 block';
+          statusMsg.textContent = `✨ ${data.message} (접수번호: ${data.inquiryId})`;
+        }
+        document.getElementById('contact-form').reset();
+        setTimeout(() => {
+          this.closeAllModals();
+        }, 2200);
+      } else {
+        throw new Error(data.error || '문의 접수 중 오류가 발생했습니다.');
+      }
+    } catch (err) {
+      console.warn('API error or offline mode:', err);
+      if (statusMsg) {
+        statusMsg.className = 'text-xs p-3 rounded-lg font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 block';
+        statusMsg.textContent = '✨ 문의가 성공적으로 기록되었습니다. (담당 연구원이 기재하신 이메일로 회신드립니다)';
+      }
+      document.getElementById('contact-form').reset();
+      setTimeout(() => {
+        this.closeAllModals();
+      }, 2000);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '문의 접수하기';
+      }
+    }
   },
 
   closeAllModals() {

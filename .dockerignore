@@ -1,6 +1,10 @@
 node_modules
 .git
 .github
+.env
+inquiries.json
 *.log
-.DS_Store
-Thumbs.db
+deploy.ps1
+deploy-github.cmd
+start-public-tunnel.ps1
+start-public-tunnel.cmd

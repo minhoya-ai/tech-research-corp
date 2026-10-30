@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  portal:
+    build: .
+    container_name: aetheris-ai-portal
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - HOST=0.0.0.0
