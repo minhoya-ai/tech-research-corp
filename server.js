@@ -103,10 +103,18 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// 6. Static File Serving with Caching
+// 6. Static File Serving with No-Cache Headers for Instant Updates
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: NODE_ENV === 'production' ? '1h' : '0',
-  etag: true
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // Prevent browser from caching index.html, scripts, and stylesheets
+    if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
 }));
 
 // ==========================================================

@@ -75,7 +75,7 @@ const I18N = {
       'featured.btn.source': '원문 사이트 ↗',
 
       'footer.corp': 'Aetheris AI Research Inc. All Rights Reserved.',
-      'footer.address': '글로벌 본사: 대한민국 경기도 화성시 동탄구 R&D Center | 실리콘밸리 연구소: Palo Alto, CA',
+      'footer.address': '글로벌 본사: 대한민국 경기도 화성시 동탄구 동탄대로 R&D Center (가칭) | 실리콘밸리 연구소: Palo Alto, CA',
       'footer.contact': '기술 협력 & 산학 연구 문의: contact@aetheris.ai | 특허 번호: KR-12-2026-XXXXXXX',
       'footer.rights': 'ISO/IEC 5259 준수 AI 데이터 품질 평가 솔루션 공인 연구소'
     },
