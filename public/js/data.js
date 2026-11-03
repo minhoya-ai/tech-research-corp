@@ -24,7 +24,7 @@ const RESEARCH_DATA = {
     koreanTagline: "고차원 데이터 인텔리전스를 탐구하고, 측정 가능한 인공지능의 미래를 창조합니다",
     description: "Aetheris AI는 고차원 임베딩 공간 기하학 분석과 ISO/IEC 5259 표준 기반 AI 데이터 품질 진단, Physical AI 시스템 엔지니어링을 선도하는 딥테크 연구기업입니다.",
     email: "research@aetheris.ai",
-    location: "판교테크노밸리 글로벌 R&D 센터 & Silicon Valley Lab"
+    location: "동탄 글로벌 R&D 센터 & Silicon Valley Lab"
   },
 
   stats: {
