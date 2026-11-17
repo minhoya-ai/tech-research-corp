@@ -313,26 +313,28 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server listening on 0.0.0.0
-const server = app.listen(PORT, HOST, () => {
-  console.log(`=======================================================`);
-  console.log(`⚡ Aetheris AI Research Portal is live!`);
-  console.log(`📍 Public Binding: http://${HOST}:${PORT}`);
-  console.log(`🌐 Local Access   : http://localhost:${PORT}`);
-  console.log(`📡 Health Check   : http://localhost:${PORT}/api/health`);
-  console.log(`📚 Public API Info: http://localhost:${PORT}/api/info`);
-  console.log(`=======================================================`);
-});
-
-// Graceful Shutdown
-function handleShutdown(signal) {
-  console.log(`\n[${signal}] Gracefully shutting down Aetheris AI Server...`);
-  server.close(() => {
-    console.log('✅ HTTP server closed. Process exiting.');
-    process.exit(0);
+// Listen only when run directly. Vercel imports this module as a serverless handler.
+if (require.main === module) {
+  const server = app.listen(PORT, HOST, () => {
+    console.log(`=======================================================`);
+    console.log(`⚡ Aetheris AI Research Portal is live!`);
+    console.log(`📍 Public Binding: http://${HOST}:${PORT}`);
+    console.log(`🌐 Local Access   : http://localhost:${PORT}`);
+    console.log(`📡 Health Check   : http://localhost:${PORT}/api/health`);
+    console.log(`📚 Public API Info: http://localhost:${PORT}/api/info`);
+    console.log(`=======================================================`);
   });
+
+  // Graceful Shutdown
+  function handleShutdown(signal) {
+    console.log(`\n[${signal}] Gracefully shutting down Aetheris AI Server...`);
+    server.close(() => {
+      console.log('✅ HTTP server closed. Process exiting.');
+      process.exit(0);
+    });
+  }
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
 }
-process.on('SIGTERM', () => handleShutdown('SIGTERM'));
-process.on('SIGINT', () => handleShutdown('SIGINT'));
 
 module.exports = app;
