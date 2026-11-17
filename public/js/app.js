@@ -7,6 +7,10 @@
  * - 데이터 인텔리전스 (Data Intelligence)
  */
 
+const API_BASE_URL = location.hostname.endsWith('.github.io')
+  ? 'https://tech-research-corp.vercel.app'
+  : '';
+
 const App = {
   activeCategory: 'all',
   searchQuery: '',
@@ -231,7 +235,7 @@ const App = {
 
       // 1. Try Live Backend API (/api/data-tech/sync)
       try {
-        const response = await fetch('/api/data-tech/sync', { method: 'POST' });
+        const response = await fetch(`${API_BASE_URL}/api/data-tech/sync`, { method: 'POST' });
         if (response.ok) {
           const resData = await response.json();
           if (resData && resData.items && resData.items.length > 0) {
@@ -969,7 +973,7 @@ const App = {
     }
 
     try {
-      const response = await fetch('/api/contact', {
+      const response = await fetch(`${API_BASE_URL}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, organization, inquiryType, message })
